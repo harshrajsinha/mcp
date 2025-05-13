@@ -1,0 +1,7 @@
+llm server/venv/
+mcp client/venv/
+mcp server/venv/
+ssmp/venv/
+venv/
+*.pyc
+*.env

@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "mcp server"
+version = "0.0.1"
+description = "MCP Server to SCIKIQ DAMS"
+authors = ["Harsh Raj <harsh.raj@scikiq.com>"]
+license = "copyright@SCIKIQ"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+requests = "^2.32.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

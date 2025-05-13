@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "ssmp"
+version = "0.0.1"
+description = "Short Message Protocol"
+authors = ["Harsh Raj <harsh.raj@scikiq.com>"]
+license = "copyright@SCIKIQ"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.12"
+pydantic = "^2.11.4"
+redis = "^6.0.0"
+uvicorn = "^0.34.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

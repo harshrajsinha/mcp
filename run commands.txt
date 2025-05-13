@@ -1,0 +1,12 @@
+-- mcp server
+python server.py
+
+-- ssmp server
+uvicorn server:app --port 9000 --reload
+
+-- llm service
+uvicorn main:app --port 8050 --reload
+
+-- mcp client 
+python client.py
+
