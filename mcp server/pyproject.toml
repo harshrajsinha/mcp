@@ -2,8 +2,8 @@
 name = "mcp server"
 version = "0.0.1"
 description = "MCP Server to SCIKIQ DAMS"
-authors = ["Harsh Raj <harsh.raj@scikiq.com>"]
-license = "copyright@SCIKIQ"
+authors = ["Harsh Raj <harshraj28@gmail.com>"]
+license = "public"
 readme = "README.md"
 
 [tool.poetry.dependencies]

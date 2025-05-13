@@ -1,8 +1,8 @@
-SSMP_ENV_PATH=C:\DAAS\"MCP POC"\ssmp\venv\Scripts
-LLMSERVICE_ENV_PATH=C:\DAAS\"MCP POC"\"llm server"\venv\Scripts
-MCPSERVER_ENV_PATH=C:\DAAS\"MCP POC"\"mcp server"\venv\Scripts
-MCPCLIENT_ENV_PATH=C:\DAAS\"MCP POC"\"mcp client"\venv\Scripts
-SSMP_PATH=C:\DAAS\"MCP POC"\ssmp
-LLMSERVICE_PATH=C:\DAAS\"MCP POC"\"llm server"
-MCPSERVER_PATH=C:\DAAS\"MCP POC"\"mcp server"
-MCPCLIENT_PATH=C:\DAAS\"MCP POC"\"mcp client"
+SSMP_ENV_PATH=C:\"MCP POC"\ssmp\venv\Scripts
+LLMSERVICE_ENV_PATH=C:\"MCP POC"\"llm server"\venv\Scripts
+MCPSERVER_ENV_PATH=C:\"MCP POC"\"mcp server"\venv\Scripts
+MCPCLIENT_ENV_PATH=C:\"MCP POC"\"mcp client"\venv\Scripts
+SSMP_PATH=C:\"MCP POC"\ssmp
+LLMSERVICE_PATH=C:\"MCP POC"\"llm server"
+MCPSERVER_PATH=C:\"MCP POC"\"mcp server"
+MCPCLIENT_PATH=C:\"MCP POC"\"mcp client"
