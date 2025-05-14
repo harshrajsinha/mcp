@@ -2,8 +2,8 @@
 name = "ssmp"
 version = "0.0.1"
 description = "Short Message Protocol"
-authors = ["Harsh Raj <harshraj28@gmail.com>"]
-license = "public"
+authors = ["Harsh Raj <harsh.raj@scikiq.com>"]
+license = "copyright@scikiq"
 readme = "README.md"
 
 [tool.poetry.dependencies]

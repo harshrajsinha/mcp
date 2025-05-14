@@ -2,8 +2,8 @@
 name = "llm server to handle query request"
 version = "0.0.1"
 description = "LLM Server to Handle Query Request, supports all kind of LLM Managed or Unmanaged. Giving user a common interface to interact with Any LLM (OpenAI, Azure OpenAI, Vertex AI etc)"
-authors = ["Harsh Raj <harshraj28@gmail.com>"]
-license = "public.com"
+authors = ["Harsh Raj <harsh.raj@scikiq.com>"]
+license = "copyright@scikiq"
 readme = "README.md"
 
 [tool.poetry.dependencies]

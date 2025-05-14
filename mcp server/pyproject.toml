@@ -2,13 +2,16 @@
 name = "mcp server"
 version = "0.0.1"
 description = "MCP Server to SCIKIQ DAMS"
-authors = ["Harsh Raj <harshraj28@gmail.com>"]
-license = "public"
+authors = ["Harsh Raj <harsh.raj@scikiq.com>"]
+license = "copyright@scikiq"
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
 requests = "^2.32.3"
+grpcio = "^1.71.0"
+openai = "1.78.1"
+python-dotenv = "1.1.0"
 
 
 [build-system]

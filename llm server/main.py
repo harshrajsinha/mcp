@@ -13,6 +13,7 @@ from __init__ import (
 
 
 
+
 class QueryRequest(BaseModel):
     session_id: str
     query: str
