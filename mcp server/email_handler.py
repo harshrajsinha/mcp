@@ -3,6 +3,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 import os
+import copy
 
 from __init__ import RESPONSE_FORMAT
 
@@ -48,14 +49,14 @@ def send_email(
         True if email was sent successfully, False otherwise
     """
 
-    result = RESPONSE_FORMAT.copy()
+    result = copy.deepcopy(RESPONSE_FORMAT)
 
 
-    sender_email="tp.admin@scikiq.com"
+    sender_email="put sendder email here"
     smtp_server="smtp.office365.com"
     smtp_port=587
-    username="tp.admin@scikiq.com"
-    password="Daaslabs@@##"    
+    username="put username here"
+    password="put password here"    
 
     # If username not provided, use sender_email
     if username is None:

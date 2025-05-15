@@ -3,6 +3,7 @@ import requests
 import json
 import grpc
 from concurrent import futures
+import copy
 
 from email_handler import send_email  # Placeholder for email function
 from llm_handler import get_task_list  # Placeholder for LLM function
@@ -37,66 +38,73 @@ def register_tool(name, description, tool_type, parameters, url=None, function=N
         tool_entry["url"] = url  # RPC services require a URL
     
     TOOLS[name] = tool_entry
+    
     return {"jsonrpc": "2.0", "result": f"Tool {name} registered successfully.", "id": 1}
+
+
 
 def get_session(client_id):
     """Retrieve session ID from SSMP."""
+
     response = requests.post(SSMP_URL, json={"client_id": client_id})
     return response.json().get("session_id", None)
 
+
+
 def process_query(tool_name, session_id, params):
     """Process queries using different types of tools."""
-    breakpoint()
+
+
     if tool_name not in TOOLS:
         print("I am in else......")
 
-        response = RESPONSE_FORMAT.copy()
-        response["result"]["session_id"] = session_id   
-        response["result"]["answer"] = {}
+        final_res = copy.deepcopy(RESPONSE_FORMAT)
+        final_res["result"]["session_id"] = session_id   
+        final_res["result"]["answer"] = {}
         try: 
             tasks = get_task_list(request["params"]["params"]["query"])
             for task in tasks["tools"]:
                 tool = TOOLS[task["name"]]
                 task_name = task["name"]
 
-                response["result"]["answer"][task_name] = {} 
-                response["result"]["answer"][task_name]["error"] = 0
-                response["result"]["answer"][task_name]["name"] = task["name"]
-                response["result"]["answer"][task_name]["task_parameters"] = task["parameters"]
+                final_res["result"]["answer"][task_name] = {} 
+                final_res["result"]["answer"][task_name]["error"] = 0
+                final_res["result"]["answer"][task_name]["name"] = task["name"]
+                final_res["result"]["answer"][task_name]["task_parameters"] = task["parameters"]
 
                 try:
                     if tool["type"] == "rest_api":
                         payload = {"jsonrpc": "2.0", "method": "process_query", "params": {"session_id": session_id, **task["parameters"]}, "id": 1}
                         result = requests.post(tool["url"], json=payload)
-                        response["result"]["answer"][task_name]["task_response"] = result.json()
+                        final_res["result"]["answer"][task_name]["task_response"] = result.json()
                     elif tool["type"] == "local_function":
                         # Get the function name from tool
                         function_name = tool["function"]
                         # Get the actual function object using globals()
                         function_object = globals()[function_name]
                         res = function_object(**task["parameters"])
-                        response["result"]["answer"][task_name]["task_response"] = res
+                        final_res["result"]["answer"][task_name]["task_response"] = res
                     elif tool["type"] == "rpc":
                         with grpc.insecure_channel(tool["url"]) as channel:
                             stub = tool["stub"](channel)
-                            response = stub.process_query(**task["parameters"])
-                            response["result"]["answer"][task_name]["task_response"] = json.loads(response)
+                            result = stub.process_query(**task["parameters"])
+                            final_res["result"]["answer"][task_name]["task_response"] = json.loads(result)
                 except Exception as e:
-                    response["result"]["answer"][task_name]["error"] = 1
-                    response["result"]["answer"][task_name]["msg"] = str(e)
+                    final_res["result"]["answer"][task_name]["error"] = 1
+                    final_res["result"]["answer"][task_name]["msg"] = str(e)
         except Exception as e:        
-            response["result"]["error"] = f"Tool {tool_name} not registered."
-            response["result"]["answer"] = "Unable to process the query."
-            response["result"]["session_id"] = session_id
+            final_res["result"]["error"] = f"Tool {tool_name} not registered."
+            final_res["result"]["answer"] = "Unable to process the query."
+            final_res["result"]["session_id"] = session_id
 
-        return response
+        return final_res
     else:    
         tool = TOOLS[tool_name]
 
         if tool["type"] == "rest_api":
             payload = {"jsonrpc": "2.0", "method": "process_query", "params": {"session_id": session_id, **params}, "id": 1}
-            response = requests.post(tool["url"], json=payload)
-            return response.json()
+            final_res = requests.post(tool["url"], json=payload)
+            return final_res.json()
         
         elif tool["type"] == "local_function":
             # Get the function name from tool
@@ -109,8 +117,8 @@ def process_query(tool_name, session_id, params):
         elif tool["type"] == "rpc":
             with grpc.insecure_channel(tool["url"]) as channel:
                 stub = tool["stub"](channel)
-                response = stub.process_query(params)
-                return json.loads(response)
+                final_res = stub.process_query(params)
+                return json.loads(final_res)
 
 
 # MCP Server
