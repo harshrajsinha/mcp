@@ -5,7 +5,7 @@ python server.py
 uvicorn server:app --port 9000 --reload
 
 -- llm service
-uvicorn main:app --port 8050 --reload
+uvicorn main:app --port 8051 --reload
 
 -- mcp client 
 python client.py

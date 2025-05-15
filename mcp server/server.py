@@ -12,7 +12,8 @@ from __init__ import TOOLS, RESPONSE_FORMAT
 # Configuration
 HOST = '127.0.0.1'
 PORT = 65432
-# FASTAPI_URL = "http://127.0.0.1:8050/llm_process"  # FastAPI endpoint
+
+
 SSMP_URL = "http://127.0.0.1:9000/session"    # SSMP session manager
 
 
@@ -49,6 +50,23 @@ def get_session(client_id):
     response = requests.post(SSMP_URL, json={"client_id": client_id})
     return response.json().get("session_id", None)
 
+def convert_to_json_rpc(data, session_id):
+    """
+    Convert a given dictionary to JSON-RPC 2.0 format.
+    
+    :param data: The dictionary containing parameters for the RPC call.
+    :return: JSON-RPC 2.0 formatted JSON string.
+    """
+
+    json_rpc_request = copy.deepcopy(RESPONSE_FORMAT)
+
+    json_rpc_request["result"]["session_id"] = session_id
+    json_rpc_request["result"]["answer"] = data["data"] 
+    json_rpc_request["result"]["error"] = data["error"] if "error" in data else None
+    json_rpc_request["result"]["msg"] = data["msg"] if "msg" in data else None    
+    
+    
+    return json_rpc_request
 
 
 def process_query(tool_name, session_id, params, task_result={}):
@@ -61,32 +79,46 @@ def process_query(tool_name, session_id, params, task_result={}):
         final_res["result"]["session_id"] = session_id   
         final_res["result"]["answer"] = {}
 
-        try: 
+        try:
+            breakpoint() 
             tasks = get_task_list(request["params"]["params"]["query"])
             for task in tasks["tasks"]:
-                tool = TOOLS[task["name"]]
-                task_name = task["name"]
-                task_id = task["id"]
+                try:
+                    tool = TOOLS[task["name"]]
+                    task_name = task["name"]
+                    task_id = task["id"]
 
-                final_res["result"]["answer"][task_name] = {} 
-                final_res["result"]["answer"][task_name]["error"] = 0
-                final_res["result"]["answer"][task_name]["name"] = task["name"]
-                final_res["result"]["answer"][task_name]["task_parameters"] = task["parameters"]
+                    final_res["result"]["answer"][task_name] = {} 
+                    final_res["result"]["answer"][task_name]["error"] = 0
+                    final_res["result"]["answer"][task_name]["name"] = task["name"]
+                    final_res["result"]["answer"][task_name]["task_parameters"] = task["parameters"]
 
-                # Resolve dependencies by injecting results from dependent tasks
-                if "depends_on" in task:
-                    dependency_id = task["depends_on"]
-                    if dependency_id in task_result:
-                        for param_key, param_value in task["parameters"].items():
-                            if param_value == f"{{{{{dependency_id}.result}}}}":
-                                task["parameters"][param_key] = task_result[dependency_id]["result"]["answer"]
-
+                    # Resolve dependencies by injecting results from dependent tasks
+                    if "depends_on" in task:
+                        dependency_id = task["depends_on"]
+                        if dependency_id in task_result:
+                            for param_key, param_value in task["parameters"].items():
+                                if param_value == f"{{{{{dependency_id}.result}}}}":
+                                    task["parameters"][param_key] = task_result[dependency_id]["result"]["answer"]
+                except Exception as e:        
+                    final_res["result"]["error"] = f"Tool {tool_name} not registered."
+                    final_res["result"]["answer"] = "Unable to process the query."
+                    final_res["result"]["session_id"] = session_id                
                 try:
                     if tool["type"] == "rest_api":
-                        payload = {"jsonrpc": "2.0", "method": "process_query", "params": {"session_id": session_id, **task["parameters"]}, "id": 1}
-                        result = requests.post(tool["url"], json=payload)
-                        final_res["result"]["answer"][task_name]["task_response"] = result.json()
-                        task_result[task_id] = result.json()
+                        if tool["payload_type"] == "form data":
+                            payload = {"session_id": session_id, **task["parameters"]}
+                            result = requests.post(tool["url"], data=payload)
+
+                            res = convert_to_json_rpc(result.json(), session_id)
+                            final_res["result"]["answer"][task_name]["task_response"] = res
+                            task_result[task_id] = res 
+                        else:                            
+                            payload = {"jsonrpc": "2.0", "method": "process_query", "params": {"session_id": session_id, **task["parameters"]}, "id": 1}
+                            result = requests.post(tool["url"], json=payload)
+
+                            final_res["result"]["answer"][task_name]["task_response"] = result.json()
+                            task_result[task_id] = result.json()
 
                     elif tool["type"] == "local_function":
                         function_name = tool["function"]
@@ -107,8 +139,8 @@ def process_query(tool_name, session_id, params, task_result={}):
                     final_res["result"]["answer"][task_name]["msg"] = str(e)
 
         except Exception as e:        
-            final_res["result"]["error"] = f"Tool {tool_name} not registered."
-            final_res["result"]["answer"] = "Unable to process the query."
+            final_res["result"]["error"] = 1
+            final_res["result"]["answer"] = f"Unable to determine task need to resolve your query."
             final_res["result"]["session_id"] = session_id
 
         return final_res
@@ -176,9 +208,6 @@ while True:
 
     except json.JSONDecodeError:
         response = {"jsonrpc": "2.0", "error": "Invalid JSON format.", "id": 1}
-
-
-
 
     conn.send(json.dumps(response).encode('utf-8'))
     conn.close()

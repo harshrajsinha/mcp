@@ -85,7 +85,7 @@ def send_email(
     # BCC recipients are handled when sending, not in message headers
     
     # Attach the body of the message
-    message.attach(MIMEText(body, "plain"))
+    message.attach(MIMEText(body, "html"))
     
     # Process attachments if any
     if attachments:

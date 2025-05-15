@@ -25,6 +25,70 @@ RESPONSE_FORMAT = {
 
 # Registry for tools
 TOOLS = {
+    "finance_dataq_service": {
+        "name": "finance_dataq_service",
+        "description": "Finance DataQ Service to process user queries. This service processes user queries related to finance data.",
+        "type": "rest_api",
+        "parameters": [
+            {
+                "name": "msg",
+                "desc": "User query to process",
+                "optional": 0,  # Mandatory
+                "value_type": "str"
+            },
+            {
+                "name": "dataset_id",
+                "desc": "Dataset ID for the finance data",
+                "optional": 0,  # Mandatory
+                "value_type": "str",
+                "default": "DSETCLNT0015000211"
+            },            
+            {
+                "name": "client_key",
+                "desc": "Resource key for the client",
+                "optional": 0,  # Mandatory
+                "value_type": "str",
+                "default": "CLNT0015"
+            },
+            {
+                "name": "user_key",
+                "desc": "Resource key for the user",
+                "optional": 0,  # Mandatory
+                "value_type": "str",
+                "default": "USERCLNT0015000001"
+            },
+            {
+                "name": "request_id",
+                "desc": "Unique request ID for tracking",
+                "optional": 0,  # Mandatory
+                "value_type": "str",
+                "default": "REQ0015"
+            },
+            {
+                "name": "conn_key",
+                "desc": "LLM connection key",
+                "optional": 0,  # Mandatory
+                "value_type": "str",    
+                "default": "DSRCCLNT0015000192" 
+            },
+            {
+                "name": "llm_mdl",
+                "desc": "LLM model name",
+                "optional": 0,  # Mandatory
+                "value_type": "str",
+                "default": "gpt-3.5-turbo-16k"
+            },
+            {
+                "name": "table_name",
+                "desc": "Table name for the finance data",
+                "optional": 0,  # Mandatory
+                "value_type": "str",
+                "default": "ebit"
+            }
+        ],
+        "url": "http://127.0.0.1:8050/dams/chat/dashboard",
+        "payload_type": "form data",
+    },    
     "llm_service": {
         "name": "llm_service",
         "description": "Language Model Processing Service to process user queries",
@@ -37,8 +101,9 @@ TOOLS = {
                 "value_type": "str"
             }
         ],
-        "url": "http://127.0.0.1:8050/llm_process"
-    },
+        "url": "http://127.0.0.1:8051/llm_process",
+        "payload_type": "json rpc",
+    },    
     "email_service": {
         "name": "email_service",
         "description": "Email Sending Service",
@@ -64,19 +129,5 @@ TOOLS = {
             }
         ],
         "function": "send_email",  # Placeholder for email function
-    },
-    "example_function": {
-        "name": "example_function",
-        "description": "Local function example",
-        "type": "local_function",
-        "parameters": [
-            {
-                "name": "number",
-                "desc": "A number to square",
-                "optional": 0,
-                "value_type": "int"
-            }
-        ],
-        "function": lambda x: {"result": x**2}  # Example local function
     }
 }
