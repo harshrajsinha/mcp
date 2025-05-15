@@ -34,23 +34,26 @@ def get_task_list(query):
 
     Output:
     {
-        "tools": [
+        "tasks": [
             {
+                "id": "task_1",
                 "name": "llm_service",
                 "parameters": {
                     "query": "List the 5 longest rivers in India"
                 }
             },
             {
+                "id": "task_2",
                 "name": "email_service",
                 "parameters": {
                     "receiver_email": "harsh.raj@scikiq.com",
                     "subject": "List of 5 longest rivers in India",
-                    "body": "<RESULT_FROM_LLM_SERVICE>"
-                }
+                    "body": "{{task_1.result}}"
+                },
+                "depends_on": "task_1"
             }
         ]
-    } 
+    }
     """    
 
     messages = [

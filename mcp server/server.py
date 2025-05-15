@@ -38,7 +38,7 @@ def register_tool(name, description, tool_type, parameters, url=None, function=N
         tool_entry["url"] = url  # RPC services require a URL
     
     TOOLS[name] = tool_entry
-    
+
     return {"jsonrpc": "2.0", "result": f"Tool {name} registered successfully.", "id": 1}
 
 
@@ -51,9 +51,8 @@ def get_session(client_id):
 
 
 
-def process_query(tool_name, session_id, params):
-    """Process queries using different types of tools."""
-
+def process_query(tool_name, session_id, params, task_result={}):
+    """Process queries using different types of tools and pass results to dependent tasks."""
 
     if tool_name not in TOOLS:
         print("I am in else......")
@@ -61,43 +60,59 @@ def process_query(tool_name, session_id, params):
         final_res = copy.deepcopy(RESPONSE_FORMAT)
         final_res["result"]["session_id"] = session_id   
         final_res["result"]["answer"] = {}
+
         try: 
             tasks = get_task_list(request["params"]["params"]["query"])
-            for task in tasks["tools"]:
+            for task in tasks["tasks"]:
                 tool = TOOLS[task["name"]]
                 task_name = task["name"]
+                task_id = task["id"]
 
                 final_res["result"]["answer"][task_name] = {} 
                 final_res["result"]["answer"][task_name]["error"] = 0
                 final_res["result"]["answer"][task_name]["name"] = task["name"]
                 final_res["result"]["answer"][task_name]["task_parameters"] = task["parameters"]
 
+                # Resolve dependencies by injecting results from dependent tasks
+                if "depends_on" in task:
+                    dependency_id = task["depends_on"]
+                    if dependency_id in task_result:
+                        for param_key, param_value in task["parameters"].items():
+                            if param_value == f"{{{{{dependency_id}.result}}}}":
+                                task["parameters"][param_key] = task_result[dependency_id]["result"]["answer"]
+
                 try:
                     if tool["type"] == "rest_api":
                         payload = {"jsonrpc": "2.0", "method": "process_query", "params": {"session_id": session_id, **task["parameters"]}, "id": 1}
                         result = requests.post(tool["url"], json=payload)
                         final_res["result"]["answer"][task_name]["task_response"] = result.json()
+                        task_result[task_id] = result.json()
+
                     elif tool["type"] == "local_function":
-                        # Get the function name from tool
                         function_name = tool["function"]
-                        # Get the actual function object using globals()
                         function_object = globals()[function_name]
                         res = function_object(**task["parameters"])
                         final_res["result"]["answer"][task_name]["task_response"] = res
+                        task_result[task_id] = res
+
                     elif tool["type"] == "rpc":
                         with grpc.insecure_channel(tool["url"]) as channel:
                             stub = tool["stub"](channel)
                             result = stub.process_query(**task["parameters"])
                             final_res["result"]["answer"][task_name]["task_response"] = json.loads(result)
+                            task_result[task_id] = json.loads(result)
+
                 except Exception as e:
                     final_res["result"]["answer"][task_name]["error"] = 1
                     final_res["result"]["answer"][task_name]["msg"] = str(e)
+
         except Exception as e:        
             final_res["result"]["error"] = f"Tool {tool_name} not registered."
             final_res["result"]["answer"] = "Unable to process the query."
             final_res["result"]["session_id"] = session_id
 
         return final_res
+
     else:    
         tool = TOOLS[tool_name]
 
@@ -107,10 +122,7 @@ def process_query(tool_name, session_id, params):
             return final_res.json()
         
         elif tool["type"] == "local_function":
-            # Get the function name from tool
             function_name = tool["function"]
-
-            # Get the actual function object using globals()
             function_object = globals()[function_name]
             return function_object(*params.values())
 
