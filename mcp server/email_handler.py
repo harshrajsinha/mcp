@@ -52,11 +52,11 @@ def send_email(
     result = copy.deepcopy(RESPONSE_FORMAT)
 
 
-    sender_email="put sendder email here"
+    sender_email="tp.admin@scikiq.com"
     smtp_server="smtp.office365.com"
     smtp_port=587
-    username="put username here"
-    password="put password here"    
+    username="tp.admin@scikiq.com"
+    password="Daaslabs@@##"    
 
     # If username not provided, use sender_email
     if username is None:
