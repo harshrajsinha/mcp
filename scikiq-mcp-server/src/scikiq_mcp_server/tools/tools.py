@@ -24,7 +24,7 @@ from enum import auto, IntFlag
 
 from enum import IntFlag, auto
 import requests
-
+import json
 
 class ToolType(IntFlag):
     FOR_SELF = auto()  # For tools that are self-contained and do not require external resources
@@ -218,12 +218,34 @@ class RestApiTool(Tools):
 
     For: ClassVar[Annotated[ToolType, ToolType.FOR_SELF]] = ToolType.FOR_SELF
 
+    def __init__(self, config=None, **kwargs):
+        """
+        Accepts a config object (e.g., SciKiqConfig) to set base_url, client_key, entity_key, user_key.
+        """
+        super().__init__(**kwargs)
+        self.config = config
+        if config:
+            self.api_base_url = getattr(config, "base_url", self.api_base_url)
+            self.client_key = getattr(config, "client_key", None)
+            self.entity_key = getattr(config, "entity_key", None)
+            self.user_key = getattr(config, "user_key", None)
+        else:
+            self.client_key = None
+            self.entity_key = None
+            self.user_key = None
+
     def get_parameters(self):
         # Subclasses can override and provide extra_properties and extra_required
         return RestApiParameters()
 
     def get_api_url(self, path: str) -> str:
         return f"{self.api_base_url}{path}"
+
+    def get_default_param(self, name, value):
+        # Use value if provided, else use from config if available
+        if value is not None:
+            return value
+        return getattr(self, name, None)
 
     def to_jsonrpc(self, response, id=None):
         """
@@ -281,9 +303,6 @@ class CreateUserTool(RestApiTool):
 
     async def invoke(
         self,
-        client_key,
-        entity_key,
-        user_key,
         first_name,
         last_name,
         email,
@@ -298,7 +317,7 @@ class CreateUserTool(RestApiTool):
         Create a new user in SCIKIQ (Single User Save).
 
         Required:
-        - client_key, entity_key, user_key, first_name, last_name, email, password
+        - first_name, last_name, email, password
 
         Optional:
         - company, selectEntity, selectRole, make_clnt_admin
@@ -307,9 +326,9 @@ class CreateUserTool(RestApiTool):
         """
         url = self.get_api_url(self.api_path)
         data = {
-            "client_key": client_key,
-            "entity_key": entity_key,
-            "user_key": user_key,
+            "client_key": self.client_key,
+            "entity_key": self.entity_key,
+            "user_key": self.user_key,
             "first_name": first_name,
             "last_name": last_name,
             "email": email,
@@ -322,9 +341,9 @@ class CreateUserTool(RestApiTool):
         # Only include selectEntity/selectRole if not client admin
         if (not make_clnt_admin or make_clnt_admin == "0"):
             if selectEntity:
-                data["selectEntity"] = selectEntity
+                data["selectEntity"] = json.dumps(selectEntity) if isinstance(selectEntity, list) else json.dumps([selectEntity])
             if selectRole:
-                data["selectRole"] = selectRole
+                data["selectRole"] = json.dumps(selectRole) if isinstance(selectRole, list) else json.dumps([selectRole])
 
         res = requests.post(url, data=data)
         response = res.json()
@@ -343,15 +362,15 @@ class ModifyUserTool(RestApiTool):
         extra_required = ["user_id"]
         return RestApiParameters(extra_properties, extra_required)
 
-    async def invoke(self, client_key, entity_key, user_key, user_id, email=None, password=None):
+    async def invoke(self, user_id, email=None, password=None, id=None):
         """
         Modify an existing user in SCIKIQ.
         """
         url = self.get_api_url(self.api_path)
         data = {
-            "client_key": client_key,
-            "entity_key": entity_key,
-            "user_key": user_key,
+            "client_key": self.client_key,
+            "entity_key": self.entity_key,
+            "user_key": self.user_key,
             "user_id": user_id,
         }
         if email:
@@ -360,7 +379,7 @@ class ModifyUserTool(RestApiTool):
             data["password"] = password
         res = requests.post(url, data=data)
         response = res.json()
-        return self.to_jsonrpc(response)
+        return self.to_jsonrpc(response, id=id)
 
 class DeleteUserTool(RestApiTool):
     For: ClassVar[Annotated[ToolType, ToolType.FOR_SCIKIQ]] = ToolType.FOR_SCIKIQ
@@ -373,20 +392,20 @@ class DeleteUserTool(RestApiTool):
         extra_required = ["user_id"]
         return RestApiParameters(extra_properties, extra_required)
 
-    async def invoke(self, client_key, entity_key, user_key, user_id):
+    async def invoke(self, user_id, id=None):
         """
         Delete a user in SCIKIQ.
         """
         url = self.get_api_url(self.api_path)
         data = {
-            "client_key": client_key,
-            "entity_key": entity_key,
-            "user_key": user_key,
+            "client_key": self.client_key,
+            "entity_key": self.entity_key,
+            "user_key": self.user_key,
             "user_id": user_id,
         }
         res = requests.post(url, data=data)
         response = res.json()
-        return self.to_jsonrpc(response)
+        return self.to_jsonrpc(response, id=id)
 
 class ListUserTool(RestApiTool):
     For: ClassVar[Annotated[ToolType, ToolType.FOR_SCIKIQ]] = ToolType.FOR_SCIKIQ
@@ -396,19 +415,19 @@ class ListUserTool(RestApiTool):
         # No extra parameters needed for listing users
         return RestApiParameters()
 
-    async def invoke(self, client_key, entity_key, user_key):
+    async def invoke(self, id=None):
         """
         List all users in SCIKIQ.
         """
         url = self.get_api_url(self.api_path)
         data = {
-            "client_key": client_key,
-            "entity_key": entity_key,
-            "user_key": user_key,
+            "client_key": self.client_key,
+            "entity_key": self.entity_key,
+            "user_key": self.user_key,
         }
         res = requests.post(url, data=data)
         response = res.json()
-        return self.to_jsonrpc(response)
+        return self.to_jsonrpc(response, id=id)
 
 class ListRolesTool(RestApiTool):
     For: ClassVar[Annotated[ToolType, ToolType.FOR_SCIKIQ]] = ToolType.FOR_SCIKIQ
@@ -418,19 +437,19 @@ class ListRolesTool(RestApiTool):
         # No extra parameters needed for listing roles
         return RestApiParameters()
 
-    async def invoke(self, client_key, entity_key, user_key):
+    async def invoke(self, id=None):
         """
         List all roles in SCIKIQ.
         """
         url = self.get_api_url(self.api_path)
         data = {
-            "client_key": client_key,
-            "entity_key": entity_key,
-            "user_key": user_key,
+            "client_key": self.client_key,
+            "entity_key": self.entity_key,
+            "user_key": self.user_key,
         }
         res = requests.post(url, data=data)
         response = res.json()
-        return self.to_jsonrpc(response)
+        return self.to_jsonrpc(response, id=id)
 
 class ListEntitiesTool(RestApiTool):
     For: ClassVar[Annotated[ToolType, ToolType.FOR_SCIKIQ]] = ToolType.FOR_SCIKIQ
@@ -442,21 +461,21 @@ class ListEntitiesTool(RestApiTool):
         extra_required = []
         return RestApiParameters(extra_properties, extra_required)
 
-    async def invoke(self, client_key, entity_key, user_key, user_role, entity):
+    async def invoke(self, user_role, entity, id=None):
         """
         List all entities in SCIKIQ for a given user role and entity.
         """
         url = self.get_api_url(self.api_path)
         data = {
-            "client_key": client_key,
-            "entity_key": entity_key,
-            "user_key": user_key,
+            "client_key": self.client_key,
+            "entity_key": self.entity_key,
+            "user_key": self.user_key,
             "user_role": user_role,
             "entity": entity,
         }
         res = requests.post(url, data=data)
         response = res.json()
-        return self.to_jsonrpc(response)
+        return self.to_jsonrpc(response, id=id)
 
 
 

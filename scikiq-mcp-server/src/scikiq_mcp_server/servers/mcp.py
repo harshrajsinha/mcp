@@ -35,6 +35,7 @@ def _mode() -> List[str]:
     return [tt.name for tt in tools.ToolType]
 
 def load_config(config_file: Optional[Path]) -> SciKiqConfig:
+    log.info(config_file)
     config = SciKiqConfig.from_env()
     if config_file:
         import yaml
